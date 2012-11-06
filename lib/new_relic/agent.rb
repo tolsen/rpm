@@ -433,17 +433,23 @@ module NewRelic
       agent.browser_timing_footer
     end
 
-    # This will clear out all thread locals after being
-    # called with keys :browser_timing_footer and
-    # :perform_action_with_newrelic_trace
-    # (in any order)
-    def done_with_thread_locals key
-      Thread.current["#{key}_complete"] = true
+    def clear_thread_local_usage_registration
+      Thread.current[:newrelic_thread_local_usage] = {}
+    end
+    
+    def register_thread_local_usage key
+      thread_local_usage[key] = :in_use
+    end
 
-      if Thread.current[:browser_timing_footer_complete] &&
-          Thread.current[:perform_action_with_newrelic_trace_complete]
+    def thread_local_usage
+      Thread.current[:newrelic_thread_local_usage] ||= {}
+    end
+
+    def unregister_thread_local_usage key
+      thread_local_usage[key] = :done
+
+      if thread_local_usage.values.all? { |v| v == :done }
         [
-         :browser_timing_footer_complete,
          :busy_entries,
          :capture_deep_tt,
          :last_metric_frame,
@@ -451,19 +457,19 @@ module NewRelic
          :newrelic_metric_frame,
          :newrelic_scope_name,
          :newrelic_scope_stack,
+         :newrelic_thread_local_usage,
          :newrelic_transaction_info,
          :newrelic_untraced,
          :newrelic_untraced,
-         :perform_action_with_newrelic_trace_complete,
          :record_sql,
          :record_tt,
          NewRelic::Agent::TransactionSampler::BUILDER_KEY,
-        ].each do |key|
+         ].each do |key|
           Thread.current[key] = nil
         end
       end
     end
-    
+
     def_delegator :'NewRelic::Agent::PipeChannelManager', :register_report_channel
   end
 end

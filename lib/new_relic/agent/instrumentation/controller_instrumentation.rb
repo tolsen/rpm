@@ -243,6 +243,8 @@ module NewRelic
         # If a single argument is passed in, it is treated as a metric
         # path.  This form is deprecated.
         def perform_action_with_newrelic_trace(*args, &block)
+          NewRelic::Agent.clear_thread_local_usage
+          NewRelic::Agent.register_thread_local_usage :perform_action_with_newrelic_trace
           request = newrelic_request(args)
           NewRelic::Agent::TransactionInfo.reset(request)
 
@@ -287,7 +289,7 @@ module NewRelic
             frame_data.pop
             
             NewRelic::Agent::TransactionInfo.get.ignore_end_user = true if ignore_enduser?
-            NewRelic::Agent.done_with_thread_locals :perform_action_with_newrelic_trace
+            NewRelic::Agent.unregister_thread_local_usage :perform_action_with_newrelic_trace
           end
         end
 

@@ -31,6 +31,7 @@ module NewRelic
       # page as is reasonably possible - that is, before any style or
       # javascript inclusions, but after any header-related meta tags
       def browser_timing_header
+        NewRelic::Agent.register_thread_local_usage :browser_timing
         if NewRelic::Agent.instance.beacon_configuration.nil? ||
            !NewRelic::Agent.is_transaction_traced? ||
            !NewRelic::Agent.is_execution_traced? ||
@@ -64,7 +65,7 @@ module NewRelic
       
         generate_footer_js(config)
       ensure
-        NewRelic::Agent.done_with_thread_locals :browser_timing_footer
+        NewRelic::Agent.unregister_thread_local_usage :browser_timing
       end
 
       module_function
