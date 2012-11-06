@@ -287,6 +287,7 @@ module NewRelic
             frame_data.pop
             
             NewRelic::Agent::TransactionInfo.get.ignore_end_user = true if ignore_enduser?
+            NewRelic::Agent.done_with_thread_locals :perform_action_with_newrelic_trace
           end
         end
 

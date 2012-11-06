@@ -52,7 +52,6 @@ module NewRelic
       def browser_timing_footer
         config = NewRelic::Agent.instance.beacon_configuration
 
-        footer = nil
         if config.nil? ||
             !config.enabled? ||
             Agent.config[:browser_key].nil? ||
@@ -60,33 +59,12 @@ module NewRelic
             !NewRelic::Agent.is_transaction_traced? ||
             !NewRelic::Agent.is_execution_traced? ||
             NewRelic::Agent::TransactionInfo.get.ignore_end_user?
-          footer = ""
-        else
-          footer = generate_footer_js(config)
+          return ""
         end
-        
-        clear_thread_locals
-        footer
-      end
-
-      def clear_thread_locals
-        [
-         :busy_entries,
-         :capture_deep_tt,
-         :last_metric_frame,
-         :new_relic_sql_data,
-         :newrelic_metric_frame,
-         :newrelic_scope_name,
-         :newrelic_scope_stack,
-         :newrelic_transaction_info,
-         :newrelic_untraced,
-         :newrelic_untraced,
-         :record_sql,
-         :record_tt,
-         NewRelic::Agent::TransactionSampler::BUILDER_KEY,
-        ].each do |key|
-          Thread.current[key] = nil
-        end
+      
+        generate_footer_js(config)
+      ensure
+        NewRelic::Agent.done_with_thread_locals :browser_timing_footer
       end
 
       module_function
@@ -150,7 +128,7 @@ module NewRelic
       def beacon_url(request)
         "#{request.scheme || 'http'}://#{Agent.config[:beacon]}/mobile/1/#{Agent.config[:browser_key]}"
       end
-
+      
       private
 
       def generate_footer_js(config)
